@@ -1,0 +1,66 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Manager {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Employee {
+  id          String       @id @default(cuid())
+  name        String
+  shortName   String
+  email       String?      @unique
+  phone       String?
+  dailyRate   Float        @default(0)
+  drivingRate Float        @default(0)
+  faceData    String?      // base64 face descriptor JSON
+  photoUrl    String?
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  attendance  Attendance[]
+  schedules   Schedule[]
+}
+
+model Attendance {
+  id         String    @id @default(cuid())
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  date       DateTime  @default(now())
+  checkInAt  DateTime  @default(now())
+  shiftType  ShiftType @default(INSTORE)
+  dayType    DayType   @default(FULL)
+  notes      String?
+  createdAt  DateTime  @default(now())
+
+  @@unique([employeeId, date])
+}
+
+model Schedule {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  dayOfWeek  Int      // 0=Sun, 1=Mon ... 6=Sat
+  startTime  String   // "09:00"
+  active     Boolean  @default(true)
+}
+
+enum ShiftType {
+  INSTORE
+  INSTORE_DRIVING
+}
+
+enum DayType {
+  FULL
+  HALF
+}
