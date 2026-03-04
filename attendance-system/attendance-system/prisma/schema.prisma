@@ -17,19 +17,20 @@ model Manager {
 }
 
 model Employee {
-  id          String       @id @default(cuid())
-  name        String
-  shortName   String
-  email       String?      @unique
-  phone       String?
-  dailyRate   Float        @default(0)
-  drivingRate Float        @default(0)
-  faceData    String?      // base64 face descriptor JSON
-  photoUrl    String?
-  active      Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  attendance  Attendance[]
-  schedules   Schedule[]
+  id               String            @id @default(cuid())
+  name             String
+  shortName        String
+  email            String?           @unique
+  phone            String?
+  dailyRate        Float             @default(0)
+  drivingRate      Float             @default(0)
+  faceData         String?           // base64 face descriptor JSON
+  photoUrl         String?
+  active           Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  attendance       Attendance[]
+  schedules        Schedule[]
+  monthlySchedules MonthlySchedule[]
 }
 
 model Attendance {
@@ -63,4 +64,21 @@ enum ShiftType {
 enum DayType {
   FULL
   HALF
+}
+
+model MonthlySchedule {
+  id         String    @id @default(cuid())
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  year       Int       // e.g. 2026
+  month      Int       // 1-12
+  date       DateTime  // the actual date
+  shiftType  ShiftType @default(INSTORE)
+  dayType    DayType   @default(FULL)
+  startTime  String    @default("09:00")
+  notes      String?
+  createdAt  DateTime  @default(now())
+
+  @@unique([employeeId, date])
+  @@index([year, month])
 }

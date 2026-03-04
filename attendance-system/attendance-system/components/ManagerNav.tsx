@@ -6,6 +6,7 @@ const navItems = [
   { href: '/manager', label: '📊 Dashboard', exact: true },
   { href: '/manager/employees', label: '👥 Employees' },
   { href: '/manager/attendance', label: '📋 Attendance' },
+  { href: '/manager/schedule', label: '📅 Schedule' },
   { href: '/manager/pay', label: '💰 Pay Report' },
 ];
 

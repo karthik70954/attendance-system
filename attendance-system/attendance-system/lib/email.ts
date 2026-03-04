@@ -57,3 +57,69 @@ export async function sendMissedCheckInAlert({
     });
   }
 }
+
+export async function sendScheduleEmail({
+  employeeName,
+  employeeEmail,
+  monthName,
+  days,
+}: {
+  employeeName: string;
+  employeeEmail: string;
+  monthName: string;
+  days: { date: Date | string; shiftType: string; dayType: string; startTime: string; notes?: string | null }[];
+}) {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const rows = days.map(d => {
+    const dt = new Date(d.date);
+    const dayName = dayNames[dt.getUTCDay()];
+    const dateStr = `${dayName}, ${dt.getUTCDate()}`;
+    const shift = d.shiftType === 'INSTORE' ? '🏪 Instore' : '🚗 Instore + Driving';
+    const dayType = d.dayType === 'FULL' ? 'Full Day' : 'Half Day';
+    return `
+      <tr style="border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 8px 12px; font-weight: 600;">${dateStr}</td>
+        <td style="padding: 8px 12px;">${d.startTime}</td>
+        <td style="padding: 8px 12px;">${shift}</td>
+        <td style="padding: 8px 12px;">${dayType}</td>
+        <td style="padding: 8px 12px; color: #666; font-size: 12px;">${d.notes || ''}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const subject = `📅 Your Work Schedule for ${monthName}`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 700px;">
+      <h2 style="color: #2563eb;">📅 Work Schedule — ${monthName}</h2>
+      <p>Hi <strong>${employeeName}</strong>,</p>
+      <p>Here is your work schedule for <strong>${monthName}</strong>. You are scheduled for <strong>${days.length} day(s)</strong>.</p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
+        <thead>
+          <tr style="background: #2563eb; color: white;">
+            <th style="padding: 10px 12px; text-align: left;">Date</th>
+            <th style="padding: 10px 12px; text-align: left;">Start</th>
+            <th style="padding: 10px 12px; text-align: left;">Shift</th>
+            <th style="padding: 10px 12px; text-align: left;">Day Type</th>
+            <th style="padding: 10px 12px; text-align: left;">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+
+      <p style="color: #666; font-size: 13px;">If you have any questions or need changes, please contact your manager.</p>
+      <br/>
+      <p style="color: #999; font-size: 12px;">— Attendance System</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.SMTP_USER,
+    to: employeeEmail,
+    subject,
+    html,
+  });
+}
