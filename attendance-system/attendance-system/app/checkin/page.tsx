@@ -272,19 +272,15 @@ export default function CheckInPage() {
     }
   }
 
-  async function manualCheckIn() {
-    if (!selectedEmployee) return;
-    const emp = employees.find(e => e.id === selectedEmployee);
-    if (!emp) return;
-
+  function quickCheckIn(emp: Employee) {
     const alreadyIn = todayRecords.find(r => r.employeeId === emp.id);
     if (alreadyIn) {
-      setMessage(`${emp.shortName} already checked in today`);
+      setMessage(`${emp.shortName} already checked in today ✓`);
       setTimeout(() => setMessage(''), 3000);
       return;
     }
-
     setRecognized(emp);
+    setSelectedEmployee(emp.id);
     setStage('confirm');
     setMessage('');
   }
@@ -294,7 +290,7 @@ export default function CheckInPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col" style={{ userSelect: 'none' }}>
       {/* Header */}
-      <div className="flex justify-between items-center px-6 py-4 bg-gray-800">
+      <div className="flex justify-between items-center px-6 py-3 bg-gray-800">
         <div>
           <div className="text-2xl font-bold">📋 Attendance</div>
           <div className="text-gray-400 text-sm">{today}</div>
@@ -305,88 +301,9 @@ export default function CheckInPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
-
-        {/* SCANNING STAGE */}
-        {(stage === 'scanning') && (
-          <div className="w-full max-w-lg space-y-4">
-            {/* Camera view */}
-            <div className="relative rounded-3xl overflow-hidden bg-black" style={{ aspectRatio: '4/3' }}>
-              <video ref={videoRef} className="w-full h-full object-cover mirror" autoPlay muted playsInline
-                style={{ transform: 'scaleX(-1)' }} />
-              <canvas ref={canvasRef} className="hidden" />
-
-              {/* Face guide overlay */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="border-4 border-blue-400 border-dashed rounded-full opacity-60"
-                  style={{ width: '45%', aspectRatio: '1' }} />
-              </div>
-
-              {scanning && (
-                <div className="absolute inset-0 bg-blue-500 opacity-10 animate-pulse" />
-              )}
-            </div>
-
-            {message && (
-              <div className="bg-gray-800 text-center py-3 px-4 rounded-xl text-yellow-300 font-medium">
-                {message}
-              </div>
-            )}
-
-            {!scanning ? (
-              <button onClick={startScan} disabled={!cameraReady}
-                className="btn-primary w-full text-xl py-5">
-                {cameraReady ? '📷 Start Face Scan' : 'Starting camera...'}
-              </button>
-            ) : (
-              <div className="text-center py-4 text-blue-300 font-medium animate-pulse text-lg">
-                🔍 Scanning...
-              </div>
-            )}
-
-            {/* Manual check-in toggle */}
-            <button onClick={() => setStage('manual')}
-              className="w-full text-gray-400 text-sm py-2 hover:text-white transition-colors">
-              Can't recognize? → Manual Check-in
-            </button>
-          </div>
-        )}
-
-        {/* MANUAL CHECK-IN */}
-        {stage === 'manual' && (
-          <div className="w-full max-w-md bg-gray-800 rounded-3xl p-6 space-y-4">
-            <h2 className="text-xl font-bold text-center">Manual Check-In</h2>
-            <select
-              className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-4 text-white text-lg"
-              value={selectedEmployee}
-              onChange={e => setSelectedEmployee(e.target.value)}
-            >
-              <option value="">Select Employee...</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.shortName} - {emp.name}
-                  {todayRecords.find(r => r.employeeId === emp.id) ? ' ✓' : ''}
-                </option>
-              ))}
-            </select>
-
-            {message && <div className="text-yellow-300 text-center text-sm">{message}</div>}
-
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={manualCheckIn} disabled={!selectedEmployee}
-                className="btn-success py-4 text-lg disabled:opacity-50">
-                Select
-              </button>
-              <button onClick={() => { setStage('scanning'); setMessage(''); }}
-                className="btn-secondary py-4 text-lg">
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* CONFIRM CHECK-IN */}
-        {stage === 'confirm' && recognized && (
+      {/* CONFIRM OVERLAY */}
+      {stage === 'confirm' && recognized && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-gray-800 rounded-3xl p-8 space-y-6 text-center">
             <div className="text-6xl">👤</div>
             <div>
@@ -438,10 +355,12 @@ export default function CheckInPage() {
               </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* SUCCESS */}
-        {stage === 'success' && recognized && (
+      {/* SUCCESS OVERLAY */}
+      {stage === 'success' && recognized && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md text-center space-y-4">
             <div className="text-8xl animate-bounce">✅</div>
             <div className="text-4xl font-bold text-green-400">Check-In Recorded!</div>
@@ -453,16 +372,117 @@ export default function CheckInPage() {
             <div className="text-green-300 text-lg font-mono">{currentTime}</div>
             <div className="text-gray-500 text-sm mt-4">Returning to scan in 4 seconds...</div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ERROR */}
-        {stage === 'error' && (
+      {/* ERROR OVERLAY */}
+      {stage === 'error' && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md text-center space-y-4">
             <div className="text-8xl">❌</div>
             <div className="text-3xl font-bold text-red-400">Check-In Failed</div>
             <div className="text-gray-300">{message}</div>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* MAIN CONTENT: Side-by-side layout */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
+
+        {/* LEFT SIDE: Camera for Face Scan */}
+        <div className="w-full lg:w-1/2 flex flex-col space-y-3">
+          <h2 className="text-lg font-bold text-center text-blue-400">📷 Face Scan</h2>
+
+          <div className="relative rounded-2xl overflow-hidden bg-black flex-1" style={{ minHeight: '250px' }}>
+            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline
+              style={{ transform: 'scaleX(-1)' }} />
+            <canvas ref={canvasRef} className="hidden" />
+
+            {/* Face guide overlay */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="border-4 border-blue-400 border-dashed rounded-full opacity-60"
+                style={{ width: '40%', aspectRatio: '1' }} />
+            </div>
+
+            {scanning && (
+              <div className="absolute inset-0 bg-blue-500 opacity-10 animate-pulse" />
+            )}
+          </div>
+
+          {message && (
+            <div className="bg-gray-800 text-center py-2 px-3 rounded-xl text-yellow-300 font-medium text-sm">
+              {message}
+            </div>
+          )}
+
+          {!scanning ? (
+            <button onClick={startScan} disabled={!cameraReady}
+              className="btn-primary w-full text-lg py-4">
+              {cameraReady ? '📷 Start Face Scan' : 'Starting camera...'}
+            </button>
+          ) : (
+            <div className="text-center py-3 text-blue-300 font-medium animate-pulse text-lg">
+              🔍 Scanning...
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT SIDE: Quick Manual Check-in */}
+        <div className="w-full lg:w-1/2 flex flex-col space-y-3 overflow-hidden">
+          <h2 className="text-lg font-bold text-center text-green-400">👤 Quick Check-In</h2>
+
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+            {employees.map(emp => {
+              const isCheckedIn = todayRecords.find(r => r.employeeId === emp.id);
+              return (
+                <button
+                  key={emp.id}
+                  onClick={() => quickCheckIn(emp)}
+                  disabled={!!isCheckedIn}
+                  className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-left transition-all ${
+                    isCheckedIn
+                      ? 'bg-green-900 bg-opacity-40 border-2 border-green-700 opacity-70 cursor-default'
+                      : 'bg-gray-800 border-2 border-gray-700 hover:border-blue-500 hover:bg-gray-750 active:scale-[0.98]'
+                  }`}
+                >
+                  {/* Avatar */}
+                  {emp.photoUrl ? (
+                    <img src={emp.photoUrl} alt={emp.shortName}
+                      className="w-14 h-14 rounded-full object-cover border-2 border-gray-600 flex-shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xl text-white flex-shrink-0">
+                      {emp.shortName.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+
+                  {/* Name */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xl font-bold truncate">
+                      {emp.shortName}
+                    </div>
+                    <div className="text-sm text-gray-400 truncate">{emp.name}</div>
+                  </div>
+
+                  {/* Status */}
+                  {isCheckedIn ? (
+                    <div className="text-green-400 text-2xl flex-shrink-0">✅</div>
+                  ) : (
+                    <div className="text-gray-500 text-sm flex-shrink-0 bg-gray-700 px-3 py-2 rounded-xl">
+                      Tap to<br/>check in
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+
+            {employees.length === 0 && (
+              <div className="text-center text-gray-500 py-8">
+                <div className="text-4xl mb-2">👥</div>
+                <div>No employees found</div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
