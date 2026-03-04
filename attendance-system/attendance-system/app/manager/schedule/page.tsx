@@ -160,27 +160,38 @@ export default function MonthlySchedulePage() {
   }
 
   async function sendSchedules() {
+    const who = selectedEmpId === 'all' ? 'all employees' : employees.find(e => e.id === selectedEmpId)?.shortName || 'employee';
+    if (!confirm(`Send ${MONTH_NAMES[month - 1]} ${year} schedule emails to ${who}?`)) return;
+
     setSending(true);
-    setMessage('Sending schedule emails...');
+    setMessage('📨 Sending schedule emails...');
 
-    const body: any = { year, month };
-    if (selectedEmpId !== 'all') body.employeeId = selectedEmpId;
+    try {
+      const body: any = { year, month };
+      if (selectedEmpId !== 'all') body.employeeId = selectedEmpId;
 
-    const res = await fetch('/api/schedule/monthly/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+      const res = await fetch('/api/schedule/monthly/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
 
-    const data = await res.json();
-    setSending(false);
+      const data = await res.json();
+      setSending(false);
 
-    if (res.ok) {
-      setMessage(`✅ Sent to ${data.sent} employee(s)${data.skipped ? `, ${data.skipped} skipped (no email)` : ''}`);
-    } else {
-      setMessage(data.error || 'Failed to send');
+      if (res.ok) {
+        let msg = `✅ Sent to ${data.sent} employee(s)`;
+        if (data.skipped) msg += `, ${data.skipped} skipped (no email)`;
+        if (data.errors && data.errors.length > 0) msg += `\n⚠️ Issues: ${data.errors.join(', ')}`;
+        setMessage(msg);
+      } else {
+        setMessage(`❌ ${data.error || 'Failed to send'}${data.detail ? ': ' + data.detail : ''}`);
+      }
+    } catch (err: any) {
+      setSending(false);
+      setMessage(`❌ Network error: ${err.message}`);
     }
-    setTimeout(() => setMessage(''), 5000);
+    setTimeout(() => setMessage(''), 10000);
   }
 
   // Calendar rendering

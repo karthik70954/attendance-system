@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { sendScheduleEmail } from '@/lib/email';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== 'manager') {
@@ -10,6 +12,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Check SMTP configuration
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      return NextResponse.json(
+        { error: 'Email not configured. Set SMTP_USER and SMTP_PASS environment variables in Vercel.' },
+        { status: 500 }
+      );
+    }
+
     const { year, month, employeeId } = await req.json();
 
     if (!year || !month) {
@@ -58,6 +68,7 @@ export async function POST(req: NextRequest) {
 
       if (!employee.email) {
         skippedCount++;
+        errors.push(`${employee.shortName}: No email address`);
         continue;
       }
 
