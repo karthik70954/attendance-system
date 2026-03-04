@@ -55,6 +55,27 @@ export default function CheckInPage() {
     return () => stopCamera();
   }, []);
 
+  // Re-bind video stream and auto-scan when returning to scanning stage
+  useEffect(() => {
+    if (stage === 'scanning') {
+      // Re-bind video srcObject in case it was lost during re-render
+      if (videoRef.current && streamRef.current) {
+        if (videoRef.current.srcObject !== streamRef.current) {
+          videoRef.current.srcObject = streamRef.current;
+          videoRef.current.play().catch(() => {});
+        }
+        setCameraReady(true);
+      }
+      // Auto-start scan after a short delay to let the camera settle
+      const autoScanTimer = setTimeout(() => {
+        if (cameraReady || (videoRef.current && streamRef.current)) {
+          startScan();
+        }
+      }, 1000);
+      return () => clearTimeout(autoScanTimer);
+    }
+  }, [stage]);
+
   async function startCamera() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -237,10 +258,12 @@ export default function CheckInPage() {
       setStage('success');
       setTodayRecords(prev => [...prev, { employeeId: recognized.id }]);
       setTimeout(() => {
-        setStage('scanning');
         setRecognized(null);
         setShiftType('INSTORE');
         setDayType('FULL');
+        setSelectedEmployee('');
+        setMessage('');
+        setStage('scanning');
       }, 4000);
     } else {
       setMessage(data.error || 'Check-in failed');
