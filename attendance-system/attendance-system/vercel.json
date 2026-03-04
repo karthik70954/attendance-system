@@ -2,5 +2,11 @@
   "buildCommand": "prisma generate && prisma db push --skip-generate && next build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/attendance/check-missed",
+      "schedule": "30 13 * * *"
+    }
+  ]
 }

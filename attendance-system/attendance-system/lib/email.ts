@@ -15,17 +15,20 @@ export async function sendMissedCheckInAlert({
   employeeEmail,
   managerEmail,
   date,
+  startTime,
 }: {
   employeeName: string;
   employeeEmail?: string | null;
   managerEmail: string;
   date: string;
+  startTime?: string;
 }) {
+  const timeStr = startTime ? ` (scheduled ${startTime})` : '';
   const subject = `⚠️ Missed Check-In: ${employeeName}`;
   const html = `
     <div style="font-family: Arial, sans-serif; padding: 20px;">
-      <h2 style="color: #e53e3e;">Missed Check-In Alert</h2>
-      <p><strong>${employeeName}</strong> was scheduled to work today (${date}) but has not checked in.</p>
+      <h2 style="color: #e53e3e;">⚠️ Missed Check-In Alert</h2>
+      <p><strong>${employeeName}</strong> was scheduled to work today <strong>${date}${timeStr}</strong> but has not checked in.</p>
       <p>Please follow up with them.</p>
       <br/>
       <p style="color: #666; font-size: 12px;">— Attendance System</p>
@@ -48,10 +51,12 @@ export async function sendMissedCheckInAlert({
       subject: `⚠️ You missed your check-in for ${date}`,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2 style="color: #e53e3e;">Missed Check-In</h2>
+          <h2 style="color: #e53e3e;">⚠️ Missed Check-In</h2>
           <p>Hi ${employeeName},</p>
-          <p>You were scheduled to work on <strong>${date}</strong> but no check-in was recorded.</p>
-          <p>If this is an error, please contact your manager.</p>
+          <p>You were scheduled to work on <strong>${date}${timeStr}</strong> but no check-in was recorded.</p>
+          <p>If this is an error, please contact your manager immediately.</p>
+          <br/>
+          <p style="color: #666; font-size: 12px;">— Attendance System</p>
         </div>
       `,
     });
